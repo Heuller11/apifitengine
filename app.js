@@ -48,18 +48,22 @@ app.post('/auth/signup', async(req,res) => {
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    const date = Date.now();
+
     //create user
     const user = new User({
         name,
         email,
-        password : passwordHash
+        password : passwordHash,
+        created_at: date,
+        updated_at: date
     })
 
     try {
         
         await user.save();
         res.status(201).json({
-            msg: 'User created successfully'
+            user
         })
 
         
@@ -97,7 +101,7 @@ app.post('/auth/login', async (req,res) => {
             id: user._id,
         }, secret)
 
-        res.status(200).json({msg: 'Authentication successful', token})
+        res.status(200).json({token})
         
     } catch (error) {
         res.status(500).json({
@@ -107,8 +111,26 @@ app.post('/auth/login', async (req,res) => {
 
 })
 
+// app.post('/routeTest', checkToken, async (req,res) => {
 
+function checkToken(req,res,next){
+    const authHeader = req.headers['authorization'];
+    const token = authHeader ? authHeader.split(" ")[1] : false;
 
+    if(!token){
+        return res.status(401).json({msg: 'Access denied'});
+    }
+
+    try {
+        
+        const secret = process.env.SECRET;
+        jwt.verify(token,secret);
+        next();
+
+    } catch (error) {
+        res.status(400).json({msg: 'Invalid token'})
+    }
+}
 
 
 
